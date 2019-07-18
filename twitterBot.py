@@ -11,6 +11,8 @@ fileName = "my_quotes.txt"
 last_mention_file = "lastMention.txt"
 mentions = []
 
+#1151753922069114880            first mention ID
+
 # setup connection to twitter. 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_key, access_secret)
@@ -34,12 +36,22 @@ def setLastMention(file_name, last_mention_id) :
     return
 
 #
-def getMentions() :
-    last_mention_id = getLastMention(last_mention_file)
-    mentions = twitter.mentions_timeline()
-    print(last_mention_id)
+def getMentions(input_id) :
+    print("... gathering mentions\n...\n...")
+    mentions = twitter.mentions_timeline(input_id)
+    print("... mentions gathered")
+    if len(mentions) == 0 :
+        print("... No new Mentions to gather since tweet ID :" + str(getLastMention(last_mention_file)))
     return mentions
 
+def respondToMentions() :
+    last_ment_id = getLastMention(last_mention_file)
+    newMentions = getMentions(last_ment_id)
+    for mention in reversed(newMentions) :
+        last_ment_id = mention.id_str
+        setLastMention(last_mention_file, last_ment_id)
+        print(last_ment_id + "\t\t"+ mention.text)
+        print('responded too')
 
 # function that will take the size of the quotes text file. from given filename above
 #   returns a random line of text from the file.
@@ -81,5 +93,6 @@ def sendTweet() :
 
 
 # send a tweet out!
-sendTweet()
-mentions = getMentions()
+#sendTweet()
+
+respondToMentions()
