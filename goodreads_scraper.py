@@ -1,20 +1,23 @@
 from bs4 import BeautifulSoup as Bsoup
 from urllib.request import urlopen 
+from urllib.error import HTTPError
 import random
 
 
 # function that scrapes the page and returns and list of quotes with person. 
 def scrape_page(input_tag) :
-
     #store the url of the page holding the quotes. 
         # website https://www.goodreads.com/quotes/tag
-    page_URL = "https://www.goodreads.com/quotes/tag/" + str(input_tag)
+    page_URL = "https://www.goodreads.com/quotes/search?utf8=%E2%9C%93&q="+ str(input_tag)+"&commit=Search" 
 
     #open connection and get content.
-    page_client = urlopen(page_URL)
-    page_html = page_client.read()
-    #close 
-    page_client.close()
+    try :
+        page_client = urlopen(page_URL)
+        page_html = page_client.read()
+        #close 
+        page_client.close()
+    except HTTPError as e :
+        page_html = e.read()
     #parse data to html
     soup = Bsoup(page_html, "html.parser")
     #access the data on the page.
@@ -36,8 +39,13 @@ def scrape_page(input_tag) :
 def getRandomQuote(input_tag) :
     #scrape the page and get quotes first.
     quotes = scrape_page(input_tag)
-    # get rand index and return quote at the index.
-    rand_index = random.randint(0, (len(quotes)-1))
-    output_quote = quotes[rand_index]
-    
+    output_quote = ""
+    #if there quotes with this tag.
+    try :
+        # get rand index and return quote at the index.
+        rand_index = random.randint(0, (len(quotes)-1))
+        output_quote = quotes[rand_index]
+    except ValueError:
+        output_quote = "NONE"
     return output_quote
+

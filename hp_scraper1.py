@@ -13,6 +13,7 @@ def scrape_page() :
     page_URL = "https://www.teenvogue.com/gallery/best-harry-potter-quotes"
 
     #open connection and get content.
+    #   scraper is not universal
     page_client = urlopen(page_URL)
     page_html = page_client.read()
     #close 

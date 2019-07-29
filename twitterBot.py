@@ -3,15 +3,18 @@ import goodreads_scraper, hp_scraper1
 
 # variables.
 
-consumer_key = "sQvpjTbD1s1RPUzjXFrYKMsxt"
-consumer_secret = "elimJPXjKylYtDy5ZacQK6CzhYrUPBzirPZq1G9Qum9Q2trA0R"
-access_key = "1150862762425430018-lw2mQubqUhowICHsVWOKhwMppIoczx"
-access_secret = "0JHF9aKWRpET5Dl0bvCLdGdEFhEo4cD9lYoJqBpc0oYeT"
+consumer_key = ""
+consumer_secret = ""
+access_key = ""
+access_secret = ""
 fileName = "my_quotes.txt"
 last_mention_file = "lastMention.txt"
 mentions = []
 
 #1151753922069114880            first mention ID
+#1152263154006712322            NEXT TEST ID
+#-            next id     ~~~
+
 
 # setup connection to twitter. 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -35,7 +38,8 @@ def setLastMention(file_name, last_mention_id) :
     f.close()
     return
 
-#
+#function that will return a set of mentions from twtter.
+# return a python like list.
 def getMentions(input_id) :
     print("... gathering mentions\n...\n...")
     mentions = twitter.mentions_timeline(input_id)
@@ -44,55 +48,74 @@ def getMentions(input_id) :
         print("... No new Mentions to gather since tweet ID :" + str(getLastMention(last_mention_file)))
     return mentions
 
+#function that will respond to the mentions since the last documented mentions.
+# needs to access the lastMentions.txt file.
+# returns to the calling funciton.
 def respondToMentions() :
+    #get the last mentions id from the file.
     last_ment_id = getLastMention(last_mention_file)
     newMentions = getMentions(last_ment_id)
+    #loop most recent mentions from the twitter timeline.
     for mention in reversed(newMentions) :
+        #store tweet ID.
         last_ment_id = mention.id_str
         setLastMention(last_mention_file, last_ment_id)
-        print(last_ment_id + "\t\t"+ mention.text)
-        print('responded too')
-
-# function that will take the size of the quotes text file. from given filename above
-#   returns a random line of text from the file.
-#   quotes in the file are seperated by line.
-def getHPFileQuote() :
-    #open file, get Number of lines, then get random line from the range.
-    print_line = ''
-    size = 1
-    with open(fileName, "r", encoding = "utf-8") as f :
-        #get line number of file, and then a random line number.
-        lines = f.readlines()
-        size = len(lines)
-        rand_line_no = random.randint(0, size-1)
-        print_line = lines[rand_line_no]
-    return print_line
+        #store tweet text.
+        last_ment_text = mention.text
+        print(last_ment_id + "\t\t"+ last_ment_text)
+        #store tweet sender
+        at_name = "@" + mention.user.screen_name
+        if "#quote" in (last_ment_text).lower() :
+            search_tag = ""
+            split_list = last_ment_text.split(" ")
+            for word in split_list :
+                if "@" in word or word.lower() == "#quote" :
+                    continue
+                if "#" in word :
+                    word = word.strip("#")
+                search_tag = search_tag + word + "+"
+            print('... responding')
+            print(search_tag)
+            quote = goodreads_scraper.getRandomQuote(str(search_tag))
+            if quote == "NONE" :
+                status = at_name + " No tweets found on goodreads.com//quotes with tag of : " + search_tag
+                twitter.update_status(status, int(last_ment_id))
+                print(status)
+            else :
+                quote = at_name +" "+ quote 
+                twitter.update_status(quote, int(last_ment_id))
+                #print(quote)
+            #print(quote)
+    print("\n... done")
+    return
 
 #call function to get the random quote.
 # function will get a random quote from one of the two scrapers randomly.
 # then it will post the quote to twitter.
-def sendTweet() :
-    #select method
-    selection = random.randrange(1,3)
+# function will need an input from the user to search good reads for.
+def sendQuote(input_tag) :
+    # try except to catch any errors then retry to post. 
     try :
-        if selection == 1 :
-            # call function and tweet.
-            #   function needs an input from the user regarding a quote topic/tag
-            #   for testing its Harry Potter.
-            randomGR_quote = goodreads_scraper.getRandomQuote("Harry Potter")
-            twitter.update_status(randomGR_quote+"\n#QuickQuote#Bot")
-            #print("Just posted a tweet, GR!")
-            #print(randomGR_quote)
-        else :
-            randomHP_quote = hp_scraper1.getRandomQuote()
-            twitter.update_status(randomHP_quote+"\n#QuickQuote#Bot")
-            #print("Just posted a tweet! HP")
-            #print(randomHP_quote)
+        # call function and tweet.
+        #   function needs an input from the user regarding a quote topic/tag
+        #   for testing its Harry Potter.
+        randomGR_quote = goodreads_scraper.getRandomQuote(str(input_tag))
+        twitter.update_status(randomGR_quote+"\n#QuickQuote#Bot")
+        print("... Random Quote Sent.")
+        #print("Just posted a tweet, GR!")
+        #print(randomGR_quote)
     except tweepy.TweepError :
-        sendTweet()
+        sendQuote(input_tag)
 
 
-# send a tweet out!
-#sendTweet()
+#def sendHPQuote() :
+    #randomHP_quote = hp_scraper1.getRandomQuote()
+    #twitter.update_status(randomHP_quote+"\n#QuickQuote#Bot")
+    #print("Just posted a tweet! HP")
+    #print(randomHP_quote)
 
+# send a HP quote tweet out!
+sendQuote("Inspiration")
+
+# gather most recent menions.
 respondToMentions()
